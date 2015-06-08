@@ -1,0 +1,134 @@
+#!/bin/bash
+
+#set -v
+
+set -e
+set -o pipefail
+#set -x
+
+# Programs we use
+
+BASENAME="${BASENAME:-basename}"
+CAT="${CAT:-cat}"
+CP="${CP:-cp}"
+CURL="${CURL:-curl}"
+GREP="${GREP:-grep}"
+LS="${LS:-ls}"
+MKDIR="${MKDIR:-mkdir}"
+MV="${MV:-mv}"
+SCP="${SCP:-scp}"
+SED="${SED:-sed}"
+SSH="${SSH:-ssh}"
+SSH_KEYGEN="${SSH_KEYGEN:-ssh-keygen}"
+TR="${TR:-tr}"
+
+# Config vars
+BACKUP_DIR="${BACKUP_DIR:-$HOME/.curl-bash-myenv-backup}"
+BACKUP_SETUP_DIR="${BACKUP_SETUP_DIR:-${BACKUP_DIR}/.setup}"
+
+SETUP_STEPS="${SETUP_STEPS:-ssh shdotfiles gitconfig}"
+SHDOTFILES="${SHDOTFILES:-.bashrc .bash_profile}"
+
+# TODO: Add platform test for Mac
+SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
+
+SOURCE=${SOURCE:-""}
+
+# BASE_URL="define other steps"
+
+# source: copy source key here
+# create: create a local key
+# createauthorize: create a local key and copy it to the source
+
+SSH_KEY_MODE=${SSH_KEY_MODE:-create}
+SSH_KEY_NAME=${SSH_KEY_NAME:-~/.ssh/id_dsa}
+SSH_PUB_KEY_NAME=${SSH_PUB_KEY_NAME:-${SSH_KEY_NAME}.pub}
+
+function setup_ssh() {
+	local sshBackupDir="${BACKUP_DIR}/.ssh"
+
+	keyMode=$(echo $SSH_KEY_MODE | $TR "[:upper:]" "[:lower:]")
+	if [ "$keyMode" != "create" -a "$keyMode" != "source" -a "$keyMode" != "createauthorize" ]; then
+		echo "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauth" > /dev/stderr
+		exit 1
+	fi
+
+	local sourceHostname="$(echo $SOURCE | $SED -e 's:\(.*\)@\(.*\):\2:')"
+	if test -z "$($GREP "^$sourceHostname" $HOME/.ssh/known_hosts)"; then
+		$SSH $SOURCE "bash -c 'for f in /etc/ssh/ssh_host_*_key.pub; do test -f \$f && $SSH_KEYGEN -l -f \$f; done'"
+		echo "Validate one of the keys displayed above matches the key you accepted; if not, you were just MITM'd! Use ctrl-c to stop $0"
+		read
+	fi
+
+	if test -n "$(echo $keyMode | $GREP create)"; then
+		test -e $SSH_KEY_NAME || $SSH_KEYGEN $SSH_KEYGEN_ARGS -f $SSH_KEY_NAME
+	elif [ "$keyMode" = "source" ]; then
+		test -e $SSH_KEY_NAME || $MV $SSH_KEY_NAME $sshBackupDir
+		test -e $SSH_PUB_KEY_NAME || $MV $SSH_PUB_KEY_NAME $sshBackupDir
+		$SCP $SOURCE:~/.ssh/\{$SSH_KEY_NAME,$SSH_PUB_KEY_NAME\} $BACKUP_SETUP_DIR
+		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_KEY_NAME) $HOME/.ssh
+		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_PUB_KEY_NAME) $HOME/.ssh
+	else
+		echo "UNREACHABLE." > /dev/stderr
+		exit -1
+	fi
+
+	if [ "$keyNode" = "createauthorize" ]; then
+		if ! test -e ${SSH_PUB_KEY_NAME}; then
+			echo "Couldn't find $SSH_PUB_KEY_NAME; bailing"
+			exit 1
+		fi
+		# Yes, I know ssh-copy-id exists; we do this because for some
+		# reason, ssh-copy-id is not available on Macs...
+		local sshKey=$($CAT $SSH_KEY_NAME)
+		$SSH $SOURCE "echo $sshKey >> ~/.ssh/authorized_keys"
+	fi
+
+	# TODO: make this a var too.
+	# cp config, known_hosts, authorized keys 
+	$SCP ${SOURCE}:~/.ssh/\{config,authorized_keys,known_hosts\} $BACKUP_SETUP_DIR/
+	test -d $sshBackupDir || $MKDIR $sshBackupDir
+	test -e $HOME/.ssh/config && $MV $HOME/.ssh/config $sshBackupDir
+
+	local sshFiles="$($LS $HOME/.ssh/{authorized_keys,known_hosts} 2> /dev/null)"
+	test -n "$sshFiles" && $CP $sshFiles $sshBackupDir
+	$MV ${BACKUP_SETUP_DIR}/config $HOME/.ssh
+	$CAT ${BACKUP_SETUP_DIR}/authorized_keys >> $HOME/.ssh/authorized_keys
+	$CAT ${BACKUP_SETUP_DIR}/known_hosts >> $HOME/.ssh/known_hosts
+
+	return 0
+}
+
+function setup_shdotfiles() {
+	local dotFileList=$(echo $SHDOTFILES | $SED -e 's: :,:g')
+	$SCP $SOURCE:~/\{$dotFileList\} ${BACKUP_SETUP_DIR}/
+
+	for f in $SHDOTFILES; do
+		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
+		$MV ${BACKUP_SETUP_DIR}/$f $HOME
+	done
+
+	return 0
+}
+
+function setup_gitconfig() {
+	$SCP ${SOURCE}:~/.gitconfig ${BACKUP_SETUP_DIR}/
+	test -f $HOME/.gitconfig && $MV $HOME/.gitconfig ${BACKUP_DIR}
+	$MV ${BACKUP_SETUP_DIR}/.gitconfig $HOME
+}
+
+if test -z "$SOURCE"; then
+	echo "Environment source must be defined." > /dev/stderr
+	exit 1
+fi
+
+echo "Environment source: $SOURCE"
+
+$MKDIR $BACKUP_DIR || true
+$MKDIR ${BACKUP_SETUP_DIR} || true
+
+for step in ${SETUP_STEPS}; do
+	setup_${step}
+	echo "setup_${step}: $?"
+done
+
