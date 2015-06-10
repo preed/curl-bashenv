@@ -44,6 +44,11 @@ SSH_KEY_MODE=${SSH_KEY_MODE:-create}
 SSH_KEY_NAME=${SSH_KEY_NAME:-~/.ssh/id_dsa}
 SSH_PUB_KEY_NAME=${SSH_PUB_KEY_NAME:-${SSH_KEY_NAME}.pub}
 
+function assert() {
+	echo "$1" > /dev/stderr
+	exit -1
+}
+
 function setup_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
 
@@ -69,8 +74,7 @@ function setup_ssh() {
 		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_KEY_NAME) $HOME/.ssh
 		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_PUB_KEY_NAME) $HOME/.ssh
 	else
-		echo "UNREACHABLE." > /dev/stderr
-		exit -1
+		assert "setup_ssh(): UNREACHABLE."
 	fi
 
 	if [ "$keyNode" = "createauthorize" ]; then
