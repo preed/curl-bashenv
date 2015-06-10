@@ -12,8 +12,10 @@ BASENAME="${BASENAME:-basename}"
 CAT="${CAT:-cat}"
 CP="${CP:-cp}"
 CURL="${CURL:-curl}"
+GIT="${GIT:-git}"
 GREP="${GREP:-grep}"
 LS="${LS:-ls}"
+LN="${LN:-ln}"
 MKDIR="${MKDIR:-mkdir}"
 MV="${MV:-mv}"
 SCP="${SCP:-scp}"
@@ -33,6 +35,9 @@ SHDOTFILES="${SHDOTFILES:-.bashrc .bash_profile}"
 SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
 
 SOURCE=${SOURCE:-""}
+SOURCE_GIT_CLONE_DIR="${SOURCE_GIT_CLONE_DIR:-${BACKUP_SETUP_DIR}/gitclone}"
+GIT_CLONE_ARGS="${GIT_CLONE_ARGS:-}"
+DOTFILE_PREFIX="${DOTFILE_PREFIX:-.}"
 
 # BASE_URL="define other steps"
 
@@ -127,15 +132,53 @@ function setup_gitconfig() {
 	$MV ${BACKUP_SETUP_DIR}/.gitconfig $HOME
 }
 
+function clone_source_gitrepo() {
+       $GIT clone $GIT_CLONE_ARGS $SOURCE $SOURCE_GIT_CLONE_DIR
+}
+
+function setup_gitrepo_shdotfiles() {
+	if ! test -d "${SOURCE_GIT_CLONE_DIR}/.git"; then
+		if test -e "$SOURCE_GIT_CLONE_DIR"; then
+			error_out "SOURCE_GIT_CLONE_DIR '${SOURCE_GIT_CLONE_DIR}' exists, but is not a git repository; bailing..."
+		endif
+		clone_source_gitrepo
+       fi
+
+	for f in $SHDOTFILES; do
+		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
+		if test -n "$DOTFILE_PREFIX"; then
+			repo_file=$(echo $f | $SED -e 's:^${DOTFILE_PREFIX}::')
+		else
+			repo_file="$f"
+		fi
+		$LN -s ${SOURCE_GIT_CLONE_DIR}/$repo_file $HOME/$f
+	done
+}
 
 test -z "$SOURCE" && error_out "Environment source must be defined."
 echo "Environment source: $SOURCE"
+
+# This isn't a very good test to see if $SOURCE is a Git repo; it grabs
+# github in the hostname _or_ .git in the path, i.e. mymachine:/myrepo.git
+if test -n "$(echo $SOURCE | $GREP -i github)" -o
+   test -n "$(echo $SOURCE | $GREP -i '\.git$')" ; then
+	runMode="gitrepo"
+else
+	runMode="sourcehomedir"
+fi
 
 $MKDIR $BACKUP_DIR || true
 $MKDIR ${BACKUP_SETUP_DIR} || true
 
 for step in ${SETUP_STEPS}; do
-	setup_${step}
-	echo "setup_${step}: $?"
+	if [ "$runMode" == "gitrepo" ]; then
+		setup_gitrepo_${step}
+		echo "setup_gitrepo_${step}: $?"
+	elif [ "$runMode" == "sourcehomedir" ]; then
+		setup_${step}
+		echo "setup_${step}: $?"
+	else
+		assert "main(): UNREACHABLE"
+	fi
 done
 
