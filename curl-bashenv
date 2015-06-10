@@ -89,7 +89,7 @@ function setup_ssh() {
 		assert "setup_ssh(): UNREACHABLE."
 	fi
 
-	if [ "$keyNode" == "createauthorize" ]; then
+	if [ "$keyMode" == "createauthorize" ]; then
 		if ! test -e ${SSH_PUB_KEY_NAME}; then
 			error_out "Couldn't find $SSH_PUB_KEY_NAME; bailing"
 		fi
