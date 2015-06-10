@@ -49,6 +49,12 @@ function assert() {
 	exit -1
 }
 
+function error_out() {
+	echo "$1" > /dev/stderr
+	test -n "$2" && exit $2
+	exit 1
+}
+
 function setup_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
 
@@ -56,8 +62,7 @@ function setup_ssh() {
 	if [ "$keyMode" != "create" -a
 	     "$keyMode" != "source" -a
 	     "$keyMode" != "createauthorize" ]; then
-		echo "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauth" > /dev/stderr
-		exit 1
+		error_out "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauth"
 	fi
 
 	local sourceHostname="$(echo $SOURCE | $SED -e 's:\(.*\)@\(.*\):\2:')"
@@ -81,8 +86,7 @@ function setup_ssh() {
 
 	if [ "$keyNode" == "createauthorize" ]; then
 		if ! test -e ${SSH_PUB_KEY_NAME}; then
-			echo "Couldn't find $SSH_PUB_KEY_NAME; bailing"
-			exit 1
+			error_out "Couldn't find $SSH_PUB_KEY_NAME; bailing"
 		fi
 		# Yes, I know ssh-copy-id exists; we do this because for some
 		# reason, ssh-copy-id is not available on Macs...
@@ -123,11 +127,8 @@ function setup_gitconfig() {
 	$MV ${BACKUP_SETUP_DIR}/.gitconfig $HOME
 }
 
-if test -z "$SOURCE"; then
-	echo "Environment source must be defined." > /dev/stderr
-	exit 1
-fi
 
+test -z "$SOURCE" && error_out "Environment source must be defined."
 echo "Environment source: $SOURCE"
 
 $MKDIR $BACKUP_DIR || true
