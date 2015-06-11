@@ -133,16 +133,16 @@ function setup_gitconfig() {
 }
 
 function clone_source_gitrepo() {
-       $GIT clone $GIT_CLONE_ARGS $SOURCE $SOURCE_GIT_CLONE_DIR
-}
-
-function setup_gitrepo_shdotfiles() {
 	if ! test -d "${SOURCE_GIT_CLONE_DIR}/.git"; then
 		if test -e "$SOURCE_GIT_CLONE_DIR"; then
 			error_out "SOURCE_GIT_CLONE_DIR '${SOURCE_GIT_CLONE_DIR}' exists, but is not a git repository; bailing..."
-		endif
-		clone_source_gitrepo
+		fi
+		$GIT clone $GIT_CLONE_ARGS $SOURCE $SOURCE_GIT_CLONE_DIR
        fi
+}
+
+function setup_gitrepo_shdotfiles() {
+	clone_source_gitrepo
 
 	for f in $SHDOTFILES; do
 		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
