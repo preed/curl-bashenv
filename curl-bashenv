@@ -67,7 +67,7 @@ function setup_ssh() {
 	if [ "$keyMode" != "create" -a
 	     "$keyMode" != "source" -a
 	     "$keyMode" != "createauthorize" ]; then
-		error_out "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauth"
+		error_out "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauthorize"
 	fi
 
 	local sourceHostname="$(echo $SOURCE | $SED -e 's:\(.*\)@\(.*\):\2:')"
