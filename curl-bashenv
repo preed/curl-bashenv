@@ -26,8 +26,9 @@ SSH_KEYGEN="${SSH_KEYGEN:-ssh-keygen}"
 TR="${TR:-tr}"
 
 # Config vars
-BACKUP_DIR="${BACKUP_DIR:-$HOME/.curl-bashenv-backup}"
-BACKUP_SETUP_DIR="${BACKUP_SETUP_DIR:-${BACKUP_DIR}/.setup}"
+CURLBASHENV_ROOT="${CURLBASHENV_ROOT:-$HOME/.curl-bashenv}"
+BACKUP_DIR="${BACKUP_DIR:-${CURLBASHENV_ROOT}/backup}"
+SETUP_DIR="${SETUP_DIR:-${CURLBASHENV_ROOT}/setup}"
 
 SETUP_STEPS="${SETUP_STEPS:-ssh shdotfiles gitconfig}"
 SHDOTFILES="${SHDOTFILES:-bashrc bash_profile}"
@@ -36,7 +37,7 @@ SHDOTFILES="${SHDOTFILES:-bashrc bash_profile}"
 SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
 
 SOURCE=${SOURCE:-""}
-SOURCE_GIT_CLONE_DIR="${SOURCE_GIT_CLONE_DIR:-${BACKUP_SETUP_DIR}/gitclone}"
+SOURCE_GIT_CLONE_DIR="${SOURCE_GIT_CLONE_DIR:-${SETUP_DIR}/gitrepo}"
 GIT_CLONE_ARGS="${GIT_CLONE_ARGS:-}"
 
 # Standard test doesn't work here, since the DOTFILE_PREFIX _could_ (and
@@ -102,9 +103,9 @@ function setup_ssh() {
 	elif [ "$keyMode" == "source" ]; then
 		test -e $SSH_KEY_NAME || $MV $SSH_KEY_NAME $sshBackupDir
 		test -e $SSH_PUB_KEY_NAME || $MV $SSH_PUB_KEY_NAME $sshBackupDir
-		$SCP $SOURCE:~/.ssh/\{$SSH_KEY_NAME,$SSH_PUB_KEY_NAME\} $BACKUP_SETUP_DIR
-		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_KEY_NAME) $HOME/.ssh
-		$MV $BACKUP_SETUP_DIR/$($BASENAME $SSH_PUB_KEY_NAME) $HOME/.ssh
+		$SCP $SOURCE:~/.ssh/\{$SSH_KEY_NAME,$SSH_PUB_KEY_NAME\} $SETUP_DIR
+		$MV $SETUP_DIR/$($BASENAME $SSH_KEY_NAME) $HOME/.ssh
+		$MV $SETUP_DIR/$($BASENAME $SSH_PUB_KEY_NAME) $HOME/.ssh
 	else
 		assert "setup_ssh(): UNREACHABLE."
 	fi
@@ -121,15 +122,15 @@ function setup_ssh() {
 
 	# TODO: make this a var too.
 	# cp config, known_hosts, authorized keys 
-	$SCP ${SOURCE}:~/.ssh/\{config,authorized_keys,known_hosts\} $BACKUP_SETUP_DIR/
+	$SCP ${SOURCE}:~/.ssh/\{config,authorized_keys,known_hosts\} $SETUP_DIR/
 	test -d $sshBackupDir || $MKDIR $sshBackupDir
 	test -e $HOME/.ssh/config && $MV $HOME/.ssh/config $sshBackupDir
 
 	local sshFiles="$($LS $HOME/.ssh/{authorized_keys,known_hosts} 2> /dev/null)"
 	test -n "$sshFiles" && $CP $sshFiles $sshBackupDir
-	$MV ${BACKUP_SETUP_DIR}/config $HOME/.ssh
-	$CAT ${BACKUP_SETUP_DIR}/authorized_keys >> $HOME/.ssh/authorized_keys
-	$CAT ${BACKUP_SETUP_DIR}/known_hosts >> $HOME/.ssh/known_hosts
+	$MV ${SETUP_DIR}/config $HOME/.ssh
+	$CAT ${SETUP_DIR}/authorized_keys >> $HOME/.ssh/authorized_keys
+	$CAT ${SETUP_DIR}/known_hosts >> $HOME/.ssh/known_hosts
 
 	return 0
 }
@@ -189,20 +190,20 @@ function setup_shdotfiles() {
 	done
 
 	local dotfile_list=join , "$prefixed_dotfiles"
-	$SCP $SOURCE:~/\{$dotfile_list\} ${BACKUP_SETUP_DIR}/
+	$SCP $SOURCE:~/\{$dotfile_list\} ${SETUP_DIR}/
 
 	for f in $dotfile_list; do
 		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
-		$MV ${BACKUP_SETUP_DIR}/$f $HOME
+		$MV ${SETUP_DIR}/$f $HOME
 	done
 
 	return 0
 }
 
 function setup_gitconfig() {
-	$SCP ${SOURCE}:~/.gitconfig ${BACKUP_SETUP_DIR}/
+	$SCP ${SOURCE}:~/.gitconfig ${SETUP_DIR}/
 	test -f $HOME/.gitconfig && $MV $HOME/.gitconfig ${BACKUP_DIR}
-	$MV ${BACKUP_SETUP_DIR}/.gitconfig $HOME
+	$MV ${SETUP_DIR}/.gitconfig $HOME
 }
 
 function setup_gitrepo_gitconfig() {
@@ -239,8 +240,8 @@ else
 	runMode="sourcehomedir"
 fi
 
-$MKDIR $BACKUP_DIR || true
-$MKDIR ${BACKUP_SETUP_DIR} || true
+$MKDIR -p $BACKUP_DIR || true
+$MKDIR -p $SETUP_DIR || true
 
 for step in ${SETUP_STEPS}; do
 	if [ "$runMode" == "gitrepo" ]; then
