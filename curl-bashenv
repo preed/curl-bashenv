@@ -8,6 +8,7 @@ set -o pipefail
 
 # Programs we use
 
+AWK="${AWK:-awk}"
 BASENAME="${BASENAME:-basename}"
 CAT="${CAT:-cat}"
 CP="${CP:-cp}"
@@ -125,6 +126,54 @@ function setup_ssh() {
 	$CAT ${BACKUP_SETUP_DIR}/authorized_keys >> $HOME/.ssh/authorized_keys
 	$CAT ${BACKUP_SETUP_DIR}/known_hosts >> $HOME/.ssh/known_hosts
 
+	return 0
+}
+
+function setup_gitrepo_ssh() {
+	keyMode=$(echo $SSH_KEY_MODE | $TR "[:upper:]" "[:lower:]")
+	if [ "$keyMode" != "create" ] &&
+	   [ "$keyMode" != "source" ] &&
+	   [ "$keyMode" != "createauthorize" ]; then
+		error_out "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauthorize"
+	fi
+
+	clone_source_gitrepo
+	repo_ssh_dir="${DOTFILE_PREFIX}ssh"
+
+	if [ -d "$SOURCE_GIT_CLONE_DIR/$repo_ssh_dir" ]; then
+		test -e $HOME/.ssh && $MV $HOME/.ssh $BACKUP_DIR
+		symlink_gitrepo_file ssh
+	else
+		echo "SSH config directory $repo_dir not found in git repo." > /dev/stderr
+		return 0
+	fi
+
+	if test -n "$(echo $keyMode | $GREP create)"; then
+		repo_key_file="$SOURCE_GIT_CLONE_DIR/$repo_ssh_dir/${SSH_KEY_NAME}"
+		if test -e "$repo_key_file"; then
+			echo "SSH key $repo_file_file exists, but key creation requested; SKIPPING KEY CREATION" > /dev/stderr
+			return 1
+		fi
+
+		$SSH_KEYGEN $SSH_KEYGEN_ARGS -f $SSH_KEY_NAME
+	fi
+
+	if [ "$keyMode" == "createauthorize" ]; then
+		if ! test -e $SSH_PUB_KEY_NAME; then
+			error_out "Couldn't find $SSH_PUB_KEY_NAME; bailing"
+		fi
+
+		auth_host=$(echo $SOURCE | $AWK -F: '{ print $1 }')
+
+		if test -n "$(echo $auth_host | $GREP -i 'github.com$')"; then
+			echo "Trying to publish your public key to github is unlikely to work, but we'll try anyway." > /dev/stderr
+		fi
+
+		# Yes, I know ssh-copy-id exists; we do this because for some
+		# reason, ssh-copy-id is not available on Macs...
+		local ssh_pub_key_contents=$($CAT $SSH_PUB_KEY_NAME)
+		$SSH $auth_host "echo $ssh_pub_key_contents >> ~/.ssh/authorized_keys"
+	fi
 	return 0
 }
 
