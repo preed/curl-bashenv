@@ -64,9 +64,9 @@ function setup_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
 
 	keyMode=$(echo $SSH_KEY_MODE | $TR "[:upper:]" "[:lower:]")
-	if [ "$keyMode" != "create" -a
-	     "$keyMode" != "source" -a
-	     "$keyMode" != "createauthorize" ]; then
+	if [ "$keyMode" != "create" ] &&
+	   [ "$keyMode" != "source" ] &&
+	   [ "$keyMode" != "createauthorize" ]; then
 		error_out "Invalid SSH_KEY_MODE '$SSH_KEY_MODE'; must be source, create, or createauthorize"
 	fi
 
@@ -160,8 +160,8 @@ echo "Environment source: $SOURCE"
 
 # This isn't a very good test to see if $SOURCE is a Git repo; it grabs
 # github in the hostname _or_ .git in the path, i.e. mymachine:/myrepo.git
-if test -n "$(echo $SOURCE | $GREP -i github)" -o
-   test -n "$(echo $SOURCE | $GREP -i '\.git$')" ; then
+if [ -n "$(echo $SOURCE | $GREP -i github)" ] ||
+   [ -n "$(echo $SOURCE | $GREP -i '\.git$')" ]; then
 	runMode="gitrepo"
 else
 	runMode="sourcehomedir"
