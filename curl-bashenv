@@ -150,7 +150,7 @@ function setup_gitrepo_ssh() {
 		test -e $HOME/.ssh && $MV $HOME/.ssh $BACKUP_DIR
 		symlink_gitrepo_file ssh
 	else
-		echo "SSH config directory $repo_dir not found in git repo." > /dev/stderr
+		echo "SSH config directory $repo_ssh_dir not found in git repo." > /dev/stderr
 		return 0
 	fi
 
