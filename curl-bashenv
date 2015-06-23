@@ -60,6 +60,16 @@ function error_out() {
 	exit 1
 }
 
+function symlink_gitrepo_file() {
+	test -z "$1" && assert "symlink_gitrepo_file: first arg empty"
+	repo_file="${DOTFILE_PREFIX}$1"
+	source_file="${SOURCE_GIT_CLONE_DIR}/$repo_file"
+
+	test -e $HOME/$1 && $MV $HOME/$1 ${BACKUP_DIR}
+	$LN -s "$source_file" $HOME/$1
+}
+
+
 function setup_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
 
@@ -145,13 +155,7 @@ function setup_gitrepo_shdotfiles() {
 	clone_source_gitrepo
 
 	for f in $SHDOTFILES; do
-		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
-		if test -n "$DOTFILE_PREFIX"; then
-			repo_file=$(echo $f | $SED -e 's:^${DOTFILE_PREFIX}::')
-		else
-			repo_file="$f"
-		fi
-		$LN -s ${SOURCE_GIT_CLONE_DIR}/$repo_file $HOME/$f
+		symlink_gitrepo_file $f
 	done
 }
 
