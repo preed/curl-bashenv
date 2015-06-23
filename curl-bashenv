@@ -33,7 +33,11 @@ SETUP_DIR="${SETUP_DIR:-${CURLBASHENV_ROOT}/setup}"
 SETUP_STEPS="${SETUP_STEPS:-ssh shdotfiles gitconfig}"
 SHDOTFILES="${SHDOTFILES:-bashrc bash_profile}"
 
-# TODO: Add platform test for Mac
+# TODO:
+# "ALL" handling in the gitrepo case (with directories?)
+# "PLUGIN" support
+
+# TODO: Add platform test for Mac: -t rsa -b 4096 -a 100
 SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
 
 SOURCE=${SOURCE:-""}
