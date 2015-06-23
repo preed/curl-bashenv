@@ -103,13 +103,13 @@ function setup_ssh() {
 	fi
 
 	if [ "$keyMode" == "createauthorize" ]; then
-		if ! test -e ${SSH_PUB_KEY_NAME}; then
+		if ! test -e $SSH_PUB_KEY_NAME; then
 			error_out "Couldn't find $SSH_PUB_KEY_NAME; bailing"
 		fi
 		# Yes, I know ssh-copy-id exists; we do this because for some
 		# reason, ssh-copy-id is not available on Macs...
-		local sshKey=$($CAT $SSH_KEY_NAME)
-		$SSH $SOURCE "echo $sshKey >> ~/.ssh/authorized_keys"
+		local ssh_pub_key_contents=$($CAT $SSH_PUB_KEY_NAME)
+		$SSH $SOURCE "echo $ssh_pub_key_contents >> ~/.ssh/authorized_keys"
 	fi
 
 	# TODO: make this a var too.
