@@ -63,13 +63,14 @@ function error_out() {
 	exit 1
 }
 
+# Always assumes the dest_file has a '.'
 function symlink_gitrepo_file() {
 	test -z "$1" && assert "symlink_gitrepo_file: first arg empty"
-	repo_file="${DOTFILE_PREFIX}$1"
-	source_file="${SOURCE_GIT_CLONE_DIR}/$repo_file"
+	source_file="${SOURCE_GIT_CLONE_DIR}/${DOTFILE_PREFIX}$1"
+	dest_file="$HOME/.$1"
 
-	test -e $HOME/$1 && $MV $HOME/$1 ${BACKUP_DIR}
-	$LN -s "$source_file" $HOME/$1
+	test -e "$dest_file" && $MV "$dest_file" "${BACKUP_DIR}"
+	$LN -s "$source_file" "$dest_file"
 }
 
 
