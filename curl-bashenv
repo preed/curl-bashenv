@@ -173,7 +173,7 @@ function setup_gitrepo_ssh() {
 			error_out "Couldn't find $SSH_PUB_KEY_NAME; bailing"
 		fi
 
-		auth_host=$(echo $SOURCE | $AWK -F: '{ print $1 }')
+		auth_host="$(echo $SOURCE | $AWK -F: '{ print $1 }')"
 
 		if test -n "$(echo $auth_host | $GREP -i 'github.com$')"; then
 			echo "Trying to publish your public key to github is unlikely to work, but we'll try anyway." > /dev/stderr
