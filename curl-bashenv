@@ -29,7 +29,7 @@ BACKUP_DIR="${BACKUP_DIR:-$HOME/.curl-bash-myenv-backup}"
 BACKUP_SETUP_DIR="${BACKUP_SETUP_DIR:-${BACKUP_DIR}/.setup}"
 
 SETUP_STEPS="${SETUP_STEPS:-ssh shdotfiles gitconfig}"
-SHDOTFILES="${SHDOTFILES:-.bashrc .bash_profile}"
+SHDOTFILES="${SHDOTFILES:-bashrc bash_profile}"
 
 # TODO: Add platform test for Mac
 SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
@@ -48,6 +48,9 @@ DOTFILE_PREFIX="${DOTFILE_PREFIX:-.}"
 SSH_KEY_MODE=${SSH_KEY_MODE:-create}
 SSH_KEY_NAME=${SSH_KEY_NAME:-~/.ssh/id_dsa}
 SSH_PUB_KEY_NAME=${SSH_PUB_KEY_NAME:-${SSH_KEY_NAME}.pub}
+
+# Nabbed from: http://stackoverflow.com/questions/1527049/bash-join-elements-of-an-array
+function join { local IFS="$1"; shift; echo "$*"; }
 
 function assert() {
 	echo "$1" > /dev/stderr
@@ -125,10 +128,15 @@ function setup_ssh() {
 }
 
 function setup_shdotfiles() {
-	local dotFileList=$(echo $SHDOTFILES | $SED -e 's: :,:g')
-	$SCP $SOURCE:~/\{$dotFileList\} ${BACKUP_SETUP_DIR}/
-
+	local prefixed_dotfiles=""
 	for f in $SHDOTFILES; do
+		prefixed_dotfiles="${prefixed_dotfiles} ${DOTFILE_PREFIX}$f"
+	done
+
+	local dotfile_list=join , "$prefixed_dotfiles"
+	$SCP $SOURCE:~/\{$dotfile_list\} ${BACKUP_SETUP_DIR}/
+
+	for f in $dotfile_list; do
 		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
 		$MV ${BACKUP_SETUP_DIR}/$f $HOME
 	done
