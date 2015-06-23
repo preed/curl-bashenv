@@ -38,7 +38,12 @@ SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
 SOURCE=${SOURCE:-""}
 SOURCE_GIT_CLONE_DIR="${SOURCE_GIT_CLONE_DIR:-${BACKUP_SETUP_DIR}/gitclone}"
 GIT_CLONE_ARGS="${GIT_CLONE_ARGS:-}"
-DOTFILE_PREFIX="${DOTFILE_PREFIX:-.}"
+
+# Standard test doesn't work here, since the DOTFILE_PREFIX _could_ (and
+# in the way we use it, often is) empty, BUT defined... as empty.
+if [ -z ${DOTFILE_PREFIX+x} ]; then
+	DOTFILE_PREFIX="."
+fi
 
 # BASE_URL="define other steps"
 
