@@ -25,7 +25,7 @@ SSH_KEYGEN="${SSH_KEYGEN:-ssh-keygen}"
 TR="${TR:-tr}"
 
 # Config vars
-BACKUP_DIR="${BACKUP_DIR:-$HOME/.curl-bash-myenv-backup}"
+BACKUP_DIR="${BACKUP_DIR:-$HOME/.curl-bashenv-backup}"
 BACKUP_SETUP_DIR="${BACKUP_SETUP_DIR:-${BACKUP_DIR}/.setup}"
 
 SETUP_STEPS="${SETUP_STEPS:-ssh shdotfiles gitconfig}"
