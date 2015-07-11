@@ -85,7 +85,7 @@ function symlink_gitrepo_file() {
 }
 
 
-function setup_ssh() {
+function setup_sourcehost_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
 
 	keyMode=$(echo $SSH_KEY_MODE | $TR "[:upper:]" "[:lower:]")
@@ -187,13 +187,13 @@ function setup_gitrepo_ssh() {
 	return 0
 }
 
-function setup_shdotfiles() {
+function setup_sourcehost_shdotfiles() {
 	local prefixed_dotfiles=""
 	for f in $SHDOTFILES; do
 		prefixed_dotfiles="${prefixed_dotfiles} ${DOTFILE_PREFIX}$f"
 	done
 
-	local dotfile_list=join , "$prefixed_dotfiles"
+	local dotfile_list=$(join , "$prefixed_dotfiles")
 	$SCP $SOURCE:~/\{$dotfile_list\} ${SETUP_DIR}/
 
 	for f in $dotfile_list; do
@@ -204,7 +204,7 @@ function setup_shdotfiles() {
 	return 0
 }
 
-function setup_gitconfig() {
+function setup_sourcehost_gitconfig() {
 	$SCP ${SOURCE}:~/.gitconfig ${SETUP_DIR}/
 	test -f $HOME/.gitconfig && $MV $HOME/.gitconfig ${BACKUP_DIR}
 	$MV ${SETUP_DIR}/.gitconfig $HOME
@@ -239,23 +239,16 @@ echo "Environment source: $SOURCE"
 # github in the hostname _or_ .git in the path, i.e. mymachine:/myrepo.git
 if [ -n "$(echo $SOURCE | $GREP -i github)" ] ||
    [ -n "$(echo $SOURCE | $GREP -i '\.git$')" ]; then
-	runMode="gitrepo"
+	run_mode="gitrepo"
 else
-	runMode="sourcehomedir"
+	run_mode="sourcehost"
 fi
 
 $MKDIR -p $BACKUP_DIR || true
 $MKDIR -p $SETUP_DIR || true
 
 for step in ${SETUP_STEPS}; do
-	if [ "$runMode" == "gitrepo" ]; then
-		setup_gitrepo_${step}
-		echo "setup_gitrepo_${step}: $?"
-	elif [ "$runMode" == "sourcehomedir" ]; then
-		setup_${step}
-		echo "setup_${step}: $?"
-	else
-		assert "main(): UNREACHABLE"
-	fi
+		setup_${run_mode}_${step}
+		echo "setup_${run_mode}_${step}: $?"
 done
 
