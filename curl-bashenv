@@ -38,8 +38,13 @@ SHDOTFILES="${SHDOTFILES:-bashrc bash_profile}"
 # "ALL" handling in the gitrepo case (with directories?)
 # "PLUGIN" support
 
-# TODO: Add platform test for Mac: -t rsa -b 4096 -a 100
+# These args come from:
+#   https://stribika.github.io/2015/01/04/secure-secure-shell.html
 SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t ed25519 -o -a 100}"
+# However, they're not supported (specifically, -o and the elliptical curve
+# key types) on current versions of RHEL, Mac OS, and a bunch of other common
+# OpenSSH installations, so for now, use the next best thing:
+SSH_KEYGEN_ARGS="${SSH_KEYGEN_ARGS:- -t rsa -b 4096 -a 100}"
 
 SOURCE=${SOURCE:-""}
 SOURCE_GIT_CLONE_DIR="${SOURCE_GIT_CLONE_DIR:-${SETUP_DIR}/gitrepo}"
