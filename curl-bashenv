@@ -194,14 +194,16 @@ function setup_gitrepo_ssh() {
 }
 
 function setup_sourcehost_shdotfiles() {
-	local prefixed_dotfiles=""
+	local prefixed_dotfiles=()
 	for f in $SHDOTFILES; do
-		prefixed_dotfiles="${prefixed_dotfiles} ${DOTFILE_PREFIX}$f"
+		local prefixed_file=${DOTFILE_PREFIX}$f
+		prefixed_dotfiles+=($prefixed_file)
 	done
 
-	local dotfile_list=$(join , "$prefixed_dotfiles")
-	$SCP $SOURCE:~/\{$dotfile_list\} ${SETUP_DIR}/
+	local dotfile_list=$(join , ${prefixed_dotfiles[*]})
+	$SCP $SOURCE:~/{$dotfile_list} ${SETUP_DIR}/
 
+	for f in $prefixed_dotfiles; do
 	for f in $dotfile_list; do
 		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
 		$MV ${SETUP_DIR}/$f $HOME
