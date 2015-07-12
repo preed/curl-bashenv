@@ -233,7 +233,7 @@ function clone_source_gitrepo() {
 			error_out "SOURCE_GIT_CLONE_DIR '${SOURCE_GIT_CLONE_DIR}' exists, but is not a git repository; bailing..."
 		fi
 		$GIT clone $GIT_CLONE_ARGS $SOURCE $SOURCE_GIT_CLONE_DIR
-       fi
+	fi
 }
 
 function setup_gitrepo_shdotfiles() {
