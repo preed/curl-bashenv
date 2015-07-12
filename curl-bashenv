@@ -90,6 +90,13 @@ function symlink_gitrepo_file() {
 	$LN -s "$source_file" "$dest_file"
 }
 
+function symlink_sourcehost_file() {
+	test -z "$1" && assert "symlink_sourcehost_file: first arg empty"
+	source_file="${SETUP_DIR}/$1"
+	dest_file="$HOME/$1"
+	test -e "$dest_file" && $MV "$dest_file" "${BACKUP_DIR}"
+	$LN -s "$source_file" "$dest_file"
+}
 
 function setup_sourcehost_ssh() {
 	local sshBackupDir="${BACKUP_DIR}/.ssh"
@@ -204,9 +211,7 @@ function setup_sourcehost_shdotfiles() {
 	$SCP $SOURCE:~/{$dotfile_list} ${SETUP_DIR}/
 
 	for f in $prefixed_dotfiles; do
-	for f in $dotfile_list; do
-		test -e $HOME/$f && $MV $HOME/$f ${BACKUP_DIR}
-		$MV ${SETUP_DIR}/$f $HOME
+		symlink_sourcehost_file $f
 	done
 
 	return 0
@@ -214,8 +219,7 @@ function setup_sourcehost_shdotfiles() {
 
 function setup_sourcehost_gitconfig() {
 	$SCP ${SOURCE}:~/.gitconfig ${SETUP_DIR}/
-	test -f $HOME/.gitconfig && $MV $HOME/.gitconfig ${BACKUP_DIR}
-	$MV ${SETUP_DIR}/.gitconfig $HOME
+	symlink_sourcehost_file .gitconfig
 }
 
 function setup_gitrepo_gitconfig() {
