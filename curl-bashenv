@@ -25,6 +25,7 @@ SED="${SED:-sed}"
 SSH="${SSH:-ssh}"
 SSH_KEYGEN="${SSH_KEYGEN:-ssh-keygen}"
 TR="${TR:-tr}"
+UNAME="${UNAME:-uname}"
 
 # Config vars
 CURLBASHENV_ROOT="${CURLBASHENV_ROOT:-$HOME/.curl-bashenv}"
@@ -65,6 +66,10 @@ fi
 SSH_KEY_MODE=${SSH_KEY_MODE:-create}
 SSH_KEY_NAME=${SSH_KEY_NAME:-~/.ssh/id_dsa}
 SSH_PUB_KEY_NAME=${SSH_PUB_KEY_NAME:-${SSH_KEY_NAME}.pub}
+
+########
+# Utility functions
+########
 
 # Nabbed from: http://stackoverflow.com/questions/1527049/bash-join-elements-of-an-array
 function join { local IFS="$1"; shift; echo "$*"; }
